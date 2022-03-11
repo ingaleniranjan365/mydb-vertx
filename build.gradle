@@ -1,0 +1,97 @@
+import org.codehaus.groovy.runtime.GStringImpl
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath 'com.jaredsburrows:gradle-license-plugin:0.8.90'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id "com.jaredsburrows.license" version "0.8.90"
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+ext {
+    vertxVersion = "4.2.2"
+    jacksonVersion = "2.13.1"
+    junitJupiterVersion = "5.8.2"
+    launcherClassName = "io.vertx.core.Launcher"
+
+    watchForChange = "src/**/*"
+    doOnChange = "${projectDir}/gradlew classes" as GStringImpl
+    artifactVersion = '1.0.' + System.env.CI_COMMIT_SHA
+}
+
+application {
+    mainClassName = "com.mydb.app.Main"
+}
+
+dependencies {
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation group: 'org.springframework', name: 'spring-core', version: '3.1.1.RELEASE'
+    implementation group: 'me.escoffier.vertx', name: 'vertx-completable-future', version: '0.1.2'
+
+    implementation "com.google.guava:guava:31.0.1-jre"
+    implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
+    implementation group: 'io.vertx', name: 'vertx-config', version: vertxVersion
+    implementation("io.vertx:vertx-core:$vertxVersion")
+    implementation("io.vertx:vertx-web:$vertxVersion")
+    implementation "io.vertx:vertx-web-client:$vertxVersion"
+    implementation "io.vertx:vertx-micrometer-metrics:$vertxVersion"
+    implementation "io.vertx:vertx-circuit-breaker:$vertxVersion"
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.8.1'
+
+    implementation("com.fasterxml.jackson.core:jackson-core:$jacksonVersion")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    implementation("org.quartz-scheduler:quartz:2.3.2")
+
+    implementation('ch.qos.logback:logback-core:1.2.10')
+    implementation('ch.qos.logback:logback-classic:1.2.10')
+    implementation('org.codehaus.janino:janino:3.1.6')
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.0.1'
+    implementation('org.slf4j:slf4j-api:1.7.32')
+    implementation('org.projectlombok:lombok:1.18.22')
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+
+    annotationProcessor('org.projectlombok:lombok:1.18.22')
+
+    testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
+    testImplementation('io.vertx:vertx-junit5:4.2.2')
+    testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.19.0'
+    testImplementation group: 'org.powermock', name: 'powermock-module-junit4', version: '2.0.9'
+    testImplementation group: 'org.powermock', name: 'powermock-api-mockito2', version: '2.0.9'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.7.7'
+    testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '3.7.7'
+
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events = ["passed", "skipped", "failed"]
+    }
+}
+
+shadowJar {
+    archiveClassifier.set("fat")
+    archiveVersion.set(artifactVersion)
+    mergeServiceFiles()
+}
