@@ -64,14 +64,15 @@ public class StateLoader {
   public ImmutablePair<Deque<String>, Map<String, Deque<Buffer>>> getMemTableDataFromWAL() {
     var memTable = new ConcurrentHashMap<String, Deque<Buffer>>();
     var probeIds = new ConcurrentLinkedDeque<String>();
-    List.of(STAGED_WAL_FILE_PATH, DEFAULT_WAL_FILE_PATH).forEach( walPath -> {
+    List.of(STAGED_WAL_FILE_PATH, DEFAULT_BASE_PATH).forEach( walPath -> {
           try {
-            var walFile = new File(walPath);
+            var walFile = new File(DEFAULT_WAL_FILE_PATH);
             if (walFile.exists()) {
               var wal = readWAL(walFile, null);
               if (wal != null) {
                 writeToMemory(probeIds, memTable, wal);
               }
+              deleteWALFile(walFile);
             }
           } catch (RuntimeException ex) {
             ex.printStackTrace();
@@ -113,6 +114,14 @@ public class StateLoader {
 
   private String getProbeId(String payload) throws JsonProcessingException {
     return mapper.readTree(payload).get("probeId").toString().replace("\"", "");
+  }
+
+  private void deleteWALFile(File walFile) {
+    try {
+      walFile.delete();
+    } catch (SecurityException ex) {
+      ex.printStackTrace();
+    }
   }
 
 }
