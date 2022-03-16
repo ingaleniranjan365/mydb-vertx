@@ -49,7 +49,7 @@ public class LSMService {
     final var validSegmentEnumeration = segmentEnumeration.stream()
         .filter(i -> new File(segmentService.getPathForSegment(i.getRight().getSegment().getSegmentName())).exists())
         .toList();
-    if (validSegmentEnumeration.size() > 10) {
+    if (validSegmentEnumeration.size() > 25) {
       var mergedSegmentIndex = mergeService.merge(validSegmentEnumeration, mergeSegment.getSegmentPath());
 
       indices.addLast(new SegmentIndex(mergeSegment, mergedSegmentIndex));

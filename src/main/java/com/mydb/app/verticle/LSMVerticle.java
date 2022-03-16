@@ -39,7 +39,7 @@ public class LSMVerticle extends AbstractVerticle {
     final var memTableData = stateLoader.getMemTableDataFromWAL();
     final var mergeService = new MergeService(fileIOService);
     final var segmentService = new SegmentService(segmentConfig, fileIOService);
-    final var segmentGenerator = new SegmentGenerator(fileIOService, segmentService, 50000, 400000);
+    final var segmentGenerator = new SegmentGenerator(fileIOService, segmentService, 25000, 400000);
     final var memTableWrapper = new MemTableWrapper(
         memTableData, indices, fileIOService, segmentGenerator);
     final var lsmService = new LSMService(memTableWrapper, indices, fileIOService, segmentService, mergeService);
