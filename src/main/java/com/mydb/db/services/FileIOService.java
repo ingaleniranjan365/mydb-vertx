@@ -9,6 +9,7 @@ import io.vertx.core.buffer.Buffer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.util.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
@@ -64,7 +64,9 @@ public class FileIOService {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    return new SegmentIndex(segment, index);
+    final var segmentIndex = new SegmentIndex(segment, index);
+    persistIndex(segment.getBackupPath(), SerializationUtils.serialize(segmentIndex));
+    return segmentIndex;
   }
 
   public void persistConfig(final String configPath, final SegmentConfig config) {
@@ -98,13 +100,13 @@ public class FileIOService {
     }
   }
 
-  public Optional<Deque<SegmentIndex>> getIndices(String path) {
+  public Optional<SegmentIndex> getIndex(String path) {
     try {
       File file = new File(path);
       var in = FileUtils.readFileToByteArray(file);
       ByteArrayInputStream bis = new ByteArrayInputStream(in);
       ObjectInputStream ois = new ObjectInputStream(bis);
-      return Optional.of((ConcurrentLinkedDeque<SegmentIndex>) ois.readObject());
+      return Optional.of((SegmentIndex) ois.readObject());
     } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace();
       return Optional.empty();
@@ -121,14 +123,13 @@ public class FileIOService {
     }
   }
 
-  public boolean persistIndices(final String newBackupPath, final byte[] indicesBytes) {
+  public void persistIndex(final String newBackupPath, final byte[] indicesBytes) {
     try {
       var newIndexFile = new File(newBackupPath);
       FileUtils.writeByteArrayToFile(newIndexFile, indicesBytes);
     } catch (IOException | RuntimeException ex) {
       ex.printStackTrace();
     }
-    return true;
   }
 
   public CompletableFuture<Boolean> writeAheadLog(Buffer payload) {

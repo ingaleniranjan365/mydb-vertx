@@ -77,24 +77,16 @@ public class SegmentGenerator {
   ) {
     LinkedList<ImmutablePair<Integer, Integer>> ranges = getRanges(size);
 
-    var segmentsWritten = ranges.parallelStream()
+    ranges.parallelStream()
         .map(range -> ImmutablePair.of(range, segmentService.getNewSegment()))
         .map(pair -> supplyAsync(
             () -> ImmutablePair.of(fileIOService.persist(pair.right, probeIds, memTable, pair.left), pair.right))
         )
         .map(CompletableFuture::join)
-        .map(pair -> {
-          updateIndices(indices, pair.left);
-          return pair.right;
-        }).toList();
+        .forEach(pair -> updateIndices(indices, pair.left));
 
     clearProbeIds(probeIds, ImmutablePair.of(0, ranges.getLast().right));
     updateHardLimitBreach(probeIds.size());
-
-    final var lastSegment = segmentsWritten.get(segmentsWritten.size() - 1);
-    supplyAsync(() -> fileIOService.persistIndices(
-        lastSegment.getBackupPath(), SerializationUtils.serialize(indices)
-    ));
 
     FileIOService.STAGED_WAL_FILE.delete();
     FileIOService.WAL_FILE.renameTo(FileIOService.STAGED_WAL_FILE);
@@ -104,7 +96,7 @@ public class SegmentGenerator {
       Deque<String> probeIds,
       ImmutablePair<Integer, Integer> range
   ) {
-    IntStream.range(range.left, range.right).parallel().forEach(i -> {
+    IntStream.range(range.left, range.right).forEach(i -> {
         try {
           probeIds.removeFirst();
         } catch (Exception ex) {

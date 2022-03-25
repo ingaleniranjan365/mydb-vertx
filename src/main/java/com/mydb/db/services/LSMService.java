@@ -49,14 +49,14 @@ public class LSMService {
     final var validSegmentEnumeration = segmentEnumeration.stream()
         .filter(i -> new File(segmentService.getPathForSegment(i.getRight().getSegment().getSegmentName())).exists())
         .toList();
-    if (validSegmentEnumeration.size() > 25) {
+    if (validSegmentEnumeration.size() > 10) {
       var mergedSegmentIndex = mergeService.merge(validSegmentEnumeration, mergeSegment.getSegmentPath());
 
       indices.addLast(new SegmentIndex(mergeSegment, mergedSegmentIndex));
       IntStream.range(0, segmentIndexCountToBeRemoved)
           .forEach(x -> indices.removeAll(getIndicesForMergedSegments(validSegmentEnumeration)));
 
-      fileIOService.persistIndices(mergeSegment.getBackupPath(), SerializationUtils.serialize(indices));
+      fileIOService.persistIndex(mergeSegment.getBackupPath(), SerializationUtils.serialize(indices));
       deleteMergedSegments(segmentEnumeration);
     }
   }

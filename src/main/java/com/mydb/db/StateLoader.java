@@ -47,18 +47,16 @@ public class StateLoader {
 
   public Deque<SegmentIndex> getIndices() {
     var segmentConfig = fileIOService.getSegmentConfig(CONFIG_PATH);
+    var indices = new ConcurrentLinkedDeque<SegmentIndex>();
     if (segmentConfig.isPresent()) {
       var counter = segmentConfig.get().getCount();
       while (counter >= 0) {
-        var index = fileIOService.getIndices(
-            DEFAULT_BASE_PATH + "/indices/backup-" + counter);
-        if (index.isPresent()) {
-          return index.get();
-        }
+        var index = fileIOService.getIndex(DEFAULT_BASE_PATH + "/indices/backup-" + counter);
+        index.ifPresent(indices::addLast);
         counter--;
       }
     }
-    return new ConcurrentLinkedDeque<>();
+    return indices;
   }
 
   public ImmutablePair<Deque<String>, Map<String, Deque<Buffer>>> getMemTableDataFromWAL() {
